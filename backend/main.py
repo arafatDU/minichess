@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List, Tuple, Optional
 
+from minichess.game import MiniChessGame
+
 
 
 app = FastAPI()
@@ -16,6 +18,8 @@ app.add_middleware(
 )
 
 
+# Store active games
+active_games: Dict[str, MiniChessGame] = {}
 
 @app.get("/health")
 async def health_check():

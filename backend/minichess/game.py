@@ -41,3 +41,18 @@ class MiniChessGame:
             'w': {'king_moved': False, 'rook_moved': {'a': False, 'h': False}},
             'b': {'king_moved': False, 'rook_moved': {'a': False, 'h': False}}
         }
+
+        
+    def get_board_state(self) -> List[List[Optional[Tuple[str, str]]]]:
+        """Return a copy of the current board state"""
+        return copy.deepcopy(self.board)
+        
+    
+     def get_game_status(self) -> Dict:
+        """Return the current game status"""
+        return {
+            'game_over': self.game_over,
+            'winner': self.winner,
+            'current_player': self.current_player
+        }
+

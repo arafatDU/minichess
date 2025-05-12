@@ -83,4 +83,52 @@ class MiniChessGame:
         """Check if a piece at a position is of a specific color"""
         piece = self.get_piece_at(pos)
         return piece is not None and piece[0] == color
+    
+    def _get_pawn_moves(self, pos: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Get all valid moves for a pawn at the given position"""
+        row, col = pos
+        color, _ = self.board[row][col]
+        moves = []
+        
+        # Determine direction based on color
+        direction = -1 if color == 'w' else 1
+        
+        # Forward move
+        forward = (row + direction, col)
+        if self.is_valid_position(forward) and self.is_empty(forward):
+            moves.append(forward)
+        
+        # Diagonal captures
+        captures = [(row + direction, col - 1), (row + direction, col + 1)]
+        for capture in captures:
+            if self.is_valid_position(capture) and not self.is_empty(capture) and not self.is_piece_color(capture, color):
+                moves.append(capture)
+        
+        return moves
+    
+    def _get_rook_moves(self, pos: Tuple[int, int]) -> List[Tuple[int, int]]:
+        """Get all valid moves for a rook at the given position"""
+        row, col = pos
+        color, _ = self.board[row][col]
+        moves = []
+        
+        # Define directions for rook movement (horizontal and vertical)
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        
+        for dr, dc in directions:
+            for i in range(1, max(6, 5)):  # Max board dimensions
+                new_row, new_col = row + i * dr, col + i * dc
+                new_pos = (new_row, new_col)
+                
+                if not self.is_valid_position(new_pos):
+                    break
+                
+                if self.is_empty(new_pos):
+                    moves.append(new_pos)
+                else:
+                    if not self.is_piece_color(new_pos, color):
+                        moves.append(new_pos)  # Capture opponent's piece
+                    break  # Can't move past a piece
+        
+        return moves
 

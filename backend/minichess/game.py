@@ -48,11 +48,39 @@ class MiniChessGame:
         return copy.deepcopy(self.board)
         
     
-     def get_game_status(self) -> Dict:
+    def get_game_status(self) -> Dict:
         """Return the current game status"""
         return {
             'game_over': self.game_over,
             'winner': self.winner,
             'current_player': self.current_player
         }
+        
+    def is_game_over(self) -> bool:
+        """Check if the game is over"""
+        return self.game_over
+    
+    def get_winner(self) -> Optional[str]:
+        """Return the winner of the game if there is one"""
+        return self.winner
+    
+    def is_valid_position(self, pos: Tuple[int, int]) -> bool:
+        """Check if a position is on the board"""
+        row, col = pos
+        return 0 <= row < 6 and 0 <= col < 5
+    
+    def is_empty(self, pos: Tuple[int, int]) -> bool:
+        """Check if a position is empty"""
+        row, col = pos
+        return self.board[row][col] is None
+    
+    def get_piece_at(self, pos: Tuple[int, int]) -> Optional[Tuple[str, str]]:
+        """Get the piece at a position"""
+        row, col = pos
+        return self.board[row][col]
+    
+    def is_piece_color(self, pos: Tuple[int, int], color: str) -> bool:
+        """Check if a piece at a position is of a specific color"""
+        piece = self.get_piece_at(pos)
+        return piece is not None and piece[0] == color
 

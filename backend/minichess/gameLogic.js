@@ -514,6 +514,140 @@ function createGame () {
 
 
 
+/**
+ * Processes a move based on the current board state and the move object.
+ * @param {Array} boardState - The current board state as a 6x5 array.
+ * @param {Object} move - The move to execute.
+ * @returns {Object} - The updated board state and game status.
+ */
+function makeMove  (boardState, move) {
+    try {
+        console.log('Making move with board state:', boardState, 'and move:', move);
+        if (!Array.isArray(boardState) || boardState.length !== 6 || !Array.isArray(boardState[0]) || boardState[0].length !== 5) {
+            throw new Error('Invalid board state format. Ensure it is a 6x5 array.');
+        }
+        const game = exports.createGame();
+        game.board = boardState;
+        // Determine whose turn it is based on move history or external input
+        // For simplicity, assuming 'w' to move. Adjust as necessary.
+        game.turn = 'w'; // You might need to pass the current turn as part of the board state or separately
+        const status = game.makeMove(move);
+        const isGameOver = game.isGameOver();
+        return { board: game.board, isGameOver, status };
+    } catch (error) {
+        throw new Error(`Error processing move: ${error.message}`);
+    }
+};
+
+
+function runMinimax (game, depth, alpha = -Infinity, beta = Infinity, maximizingPlayer = true)  {
+    console.log(`Running minimax at depth ${depth} for ${maximizingPlayer ? 'maximizing' : 'minimizing'} player.`);
+    if (depth <= 0 || game.isGameOver()) {
+        return { score: evaluatePosition(game) };
+    }
+    if (maximizingPlayer) {
+        let maxEval = -Infinity;
+        let bestMove = null;
+        const moves = generateMoves(game, game.turn);
+        for (const move of moves) {
+            const gameCopy = cloneGame(game);
+            try {
+                gameCopy.makeMove(move);
+                const evaluation = exports.runMinimax(gameCopy, depth - 1, alpha, beta, false).score;
+                if (evaluation > maxEval) {
+                    maxEval = evaluation;
+                    bestMove = move;
+                }
+                alpha = Math.max(alpha, evaluation);
+                if (beta <= alpha) break;
+            } catch (err) {
+                console.error('Error during minimax move generation:', err);
+            }
+        }
+        return { score: maxEval, bestMove };
+    } else {
+        let minEval = Infinity;
+        let bestMove = null;
+        const moves = generateMoves(game, game.turn);
+        for (const move of moves) {
+            const gameCopy = cloneGame(game);
+            try {
+                gameCopy.makeMove(move);
+                const evaluation = exports.runMinimax(gameCopy, depth - 1, alpha, beta, true).score;
+                if (evaluation < minEval) {
+                    minEval = evaluation;
+                    bestMove = move;
+                }
+                beta = Math.min(beta, evaluation);
+                if (beta <= alpha) break;
+            } catch (err) {
+                console.error('Error during minimax move generation:', err);
+            }
+        }
+        return { score: minEval, bestMove };
+    }
+};
+
+/**
+ * Evaluates the current board position.
+ * @param {Object} game - The current game instance.
+ * @returns {number} - The evaluation score.
+ */
+function evaluatePosition(game) {
+    let score = evaluateBoard(game);
+
+    // Analyze move history for patterns
+    if (game.moveHistory.length > 0) {
+        const lastMove = game.moveHistory[game.moveHistory.length - 1];
+        const piece = game.board[lastMove.to[0]][lastMove.to[1]];
+
+        // Check last 8 moves for patterns
+        const recentMoves = game.moveHistory.slice(-8);
+        const pieceMoveCounts = {};
+        const positionCounts = {};
+
+        recentMoves.forEach(move => {
+            const piece = game.board[move.to[0]][move.to[1]];
+            pieceMoveCounts[piece] = (pieceMoveCounts[piece] || 0) + 1;
+
+            const posKey = `${move.from[0]},${move.from[1]}-${move.to[0]},${move.to[1]}`;
+            positionCounts[posKey] = (positionCounts[posKey] || 0) + 1;
+        });
+
+        // Penalize piece overuse
+        Object.values(pieceMoveCounts).forEach(count => {
+            if (count > 2) {  // If piece used more than twice in last 8 moves
+                score -= (count - 2) * 75;
+            }
+        });
+
+        // Penalize position repetition
+        Object.values(positionCounts).forEach(count => {
+            if (count > 1) {  // If position repeated
+                score -= (count - 1) * 100;
+            }
+        });
+
+        // Encourage piece development
+        const unusedPieces = getAllPieces(game).filter(p =>
+            !recentMoves.some(m =>
+                m.from[0] === p.row && m.from[1] === p.col
+            )
+        );
+        score -= unusedPieces.length * 20;  // Small penalty for unused pieces
+    }
+
+    // Add checkmate/stalemate evaluation
+    if (game.gameStatus && game.gameStatus.isOver) {
+        if (game.gameStatus.result === 'checkmate') {
+            score += (game.turn === 'b' ? 20000 : -20000);
+        } else {
+            score = 0;  // Stalemate or insufficient material
+        }
+    }
+
+    return score;
+}
 
 
 

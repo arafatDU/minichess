@@ -197,6 +197,327 @@ function quiescenceSearch(game, alpha, beta, depth, maxDepth = 4) {
 
 
 
+
+
+
+function isCheckmate(game, color) {
+    console.log(`\nChecking checkmate for ${color}`);
+
+    if (!isCheck(game, color)) {
+        console.log(`${color} king is not in check`);
+        return false;
+    }
+
+    console.log(`${color} king IS in check - checking for escape moves`);
+
+
+    const allMoves = generateMoves(game, color);
+    console.log(`Found ${allMoves.length} possible moves to try escape check`);
+
+    for (const move of allMoves) {
+        const gameCopy = cloneGame(game);
+        try {
+            gameCopy.turn = color;
+            gameCopy.makeMove(move);
+            if (!isCheck(gameCopy, color)) {
+                console.log(`Not in checkmate - found escape move:`, move);
+                return false; // Found a move that escapes check
+            }
+            console.log(`Move ${JSON.stringify(move)} doesn't escape check`);
+        } catch (error) {
+            continue;
+        }
+    }
+    console.log(`CHECKMATE CONFIRMED - ${color} has no legal moves to escape check`);
+
+    return true;
+}
+
+function isStalemate(game, color) {
+    if (isCheck(game, color)) return false;
+    const moves = generateMoves(game, color);
+    return moves.length === 0;
+}
+
+function isInsufficientMaterial(game) {
+    const pieces = game.board.flat().filter(piece => piece !== '.');
+
+    if (pieces.length <= 2) return true; // Only kings left
+
+    if (pieces.length === 3) {
+        const nonKings = pieces.filter(p => p.toLowerCase() !== 'k');
+        if (nonKings.length === 1) {
+            const piece = nonKings[0].toLowerCase();
+            return piece === 'n' || piece === 'b';
+        }
+    }
+
+    return false;
+}
+
+function createGame () {
+    return {
+        board: [
+            ['r', 'n', 'b', 'q', 'k'],
+            ['p', 'p', 'p', 'p', 'p'],
+            ['.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.'],
+            ['P', 'P', 'P', 'P', 'P'],
+            ['R', 'N', 'B', 'Q', 'K']
+        ],
+        turn: 'w',
+        moveHistory: [],
+        winner: null,
+        gameStatus: null,
+        makeMove(move) {
+            console.log('\nAttempting to make move:', move);
+            const { from, to, promotion } = move;
+
+            if (!Array.isArray(from) || !Array.isArray(to) ||
+                from.length !== 2 || to.length !== 2) {
+                throw new Error('Invalid move format');
+            }
+
+            const [fromX, fromY] = from;
+            const [toX, toY] = to;
+
+            if (!isValidPosition(fromX, fromY) || !isValidPosition(toX, toY)) {
+                throw new Error('Move out of bounds');
+            }
+
+            const piece = this.board[fromX][fromY];
+            const captured = this.board[toX][toY] !== '.' ? this.board[toX][toY] : null; // Capture piece if exists
+            if (piece === '.') {
+                throw new Error('No piece at selected position');
+            }
+
+            if ((this.turn === 'w' && piece !== piece.toUpperCase()) ||
+                (this.turn === 'b' && piece !== piece.toLowerCase())) {
+                throw new Error('Not your turn');
+            }
+
+            const validMoves = generatePieceMoves(this, [fromX, fromY]);
+            const isValidMove = validMoves.some(m =>
+                m.to[0] === toX && m.to[1] === toY
+            );
+
+            if (!isValidMove) {
+                console.log('Move not found in valid moves list');
+                throw new Error('Invalid move for this piece');
+            }
+
+            const originalPiece = this.board[toX][toY];
+            console.log(`Moving ${piece} from [${fromX},${fromY}] to [${toX},${toY}]`);
+            this.board[toX][toY] = piece;
+            this.board[fromX][fromY] = '.';
+
+            // Handle pawn promotion
+            const isPawn = piece.toLowerCase() === 'p';
+            const promotionRow = this.turn === 'w' ? 0 : 5;
+
+            if (isPawn && toX === promotionRow) {
+                console.log('Pawn reached promotion row');
+                // Automatically promote to queen
+                this.board[toX][toY] = this.turn === 'w' ? 'Q' : 'q';
+                console.log(`Pawn promoted to ${this.board[toX][toY]}`);
+            } else {
+                this.board[toX][toY] = piece;
+            }
+
+            // Check if move leaves/puts own king in check
+            if (isCheck(this, this.turn)) {
+                console.log(`Move would leave/keep king in check - reverting move`);
+                this.board[fromX][fromY] = piece;
+                this.board[toX][toY] = originalPiece;
+                throw new Error('Move would leave king in check');
+            }
+
+            // Record move in history
+            this.moveHistory.push({
+                from: move.from,
+                to: move.to,
+                piece: piece,
+                captured: originalPiece !== '.',
+                promotion: isPawn && toX === promotionRow ? 'q' : null
+
+            });
+
+            const oldTurn = this.turn;
+            this.turn = this.turn === 'w' ? 'b' : 'w';
+            console.log(`Turn switched to ${this.turn}`);
+
+
+            if (isCheck(this, this.turn)) {
+                console.log(`${this.turn} is in check after move`);
+
+                const allPossibleMoves = generateMoves(this, this.turn);
+                console.log(`Found ${allPossibleMoves.length} possible moves to escape check`);
+
+                let canEscapeCheck = false;
+
+                // Try each move in the cloned game
+                for (const possibleMove of allPossibleMoves) {
+                    const gameCopy = cloneGame(this);
+                    gameCopy.turn = this.turn; // Ensure correct turn in copy
+
+                    try {
+                        const [fx, fy] = possibleMove.from;
+                        const [tx, ty] = possibleMove.to;
+                        const movingPiece = gameCopy.board[fx][fy];
+                        gameCopy.board[fx][fy] = '.';
+                        gameCopy.board[tx][ty] = movingPiece;
+
+                        // If this position is not in check, we found an escape
+                        if (!isCheck(gameCopy, this.turn)) {
+                            canEscapeCheck = true;
+                            console.log('Found escape move:', possibleMove);
+                            break;
+                        }
+
+                        // Revert the move in copy
+                        gameCopy.board[fx][fy] = movingPiece;
+                        gameCopy.board[tx][ty] = '.';
+                    } catch (error) {
+                        continue;
+                    }
+                }
+
+                if (!canEscapeCheck) {
+                    console.log('CHECKMATE CONFIRMED - no valid moves to escape check');
+                    return {
+                        isOver: true,
+                        result: 'checkmate',
+                        winner: oldTurn,
+                        message: `Checkmate! ${oldTurn === 'w' ? 'White' : 'Black'} wins!`
+                    };
+                }
+
+                return {
+                    isOver: false,
+                    result: null,
+                    winner: null,
+                    message: `${this.turn === 'w' ? 'White' : 'Black'} is in check!`
+                };
+            }
+
+            // Check for stalemate
+            const availableMoves = generateMoves(this, this.turn);
+            if (availableMoves.length === 0) {
+                console.log('STALEMATE DETECTED');
+                return {
+                    isOver: true,
+                    result: 'stalemate',
+                    winner: 'draw',
+                    message: 'Game drawn by stalemate!'
+                };
+            }
+
+            // Check for insufficient material
+            if (isInsufficientMaterial(this)) {
+                console.log('INSUFFICIENT MATERIAL DETECTED');
+                return {
+                    isOver: true,
+                    result: 'insufficient',
+                    winner: 'draw',
+                    message: 'Game drawn by insufficient material!'
+                };
+            }
+
+            // Return normal game status
+            return {
+                isOver: false,
+                result: null,
+                winner: null,
+                captured: captured,
+                message: `${this.turn === 'w' ? 'White' : 'Black'} to move`
+            };
+        },
+        makeAIMove() {
+            const move = getBestMove(this);
+            if (move) {
+                return this.makeMove(move);
+            }
+            return null;
+        },
+
+        getGameStatus() {
+            const opponent = this.turn;
+            const current = opponent === 'w' ? 'b' : 'w';
+            console.log(`Checking game status: Turn = ${this.turn}, Opponent = ${opponent}`);
+
+            if (isCheckmate(this, opponent)) {
+                console.log(`Game over - Checkmate! ${current} wins`);
+
+                return {
+                    isOver: true,
+                    result: 'checkmate',
+                    winner: current,
+                    message: `Checkmate! ${current === 'w' ? 'White' : 'Black'} wins!`
+                };
+            }
+
+            if (isStalemate(this, opponent)) {
+                return {
+                    isOver: true,
+                    result: 'stalemate',
+                    winner: 'draw',
+                    message: 'Game drawn by stalemate!'
+                };
+            }
+
+            if (isInsufficientMaterial(this)) {
+                return {
+                    isOver: true,
+                    result: 'insufficient',
+                    winner: 'draw',
+                    message: 'Game drawn by insufficient material!'
+                };
+            }
+
+            // Check if current player is in check
+            if (isCheck(this, opponent)) {
+                return {
+                    isOver: false,
+                    result: null,
+                    winner: null,
+                    message: `${opponent === 'w' ? 'White' : 'Black'} is in check!`
+                };
+            }
+
+            return {
+                isOver: false,
+                result: null,
+                winner: null,
+                message: `${opponent === 'w' ? 'White' : 'Black'} to move`
+            };
+        },
+
+        isGameOver() {
+            const status = this.getGameStatus();
+            return status.isOver;
+        },
+
+        getValidMoves(position) {
+            const moves = generatePieceMoves(this, position);
+            return moves.filter(move => {
+                const gameCopy = cloneGame(this);
+                try {
+                    gameCopy.makeMove(move);
+                    return !isCheck(gameCopy, this.turn);
+                } catch {
+                    return false;
+                }
+            });
+        }
+    };
+};
+
+
+
+
+
+
+
 function getAllPieces(game) {
     const pieces = [];
     const color = game.turn;

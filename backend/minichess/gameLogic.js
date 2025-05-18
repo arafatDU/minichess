@@ -189,15 +189,175 @@ function quiescenceSearch(game, alpha, beta, depth, maxDepth = 4) {
     return alpha;
 }
 
+function alphaBeta(game, depth, alpha, beta, maximizingPlayer, timeLimit,stopSearch) {
+    if (stopSearch.flag || Date.now() >= timeLimit) {
+        stopSearch.flag = true;
+        return { score: evaluateBoard(game), bestMove: null };
+    }
+
+    const ttEntry = transpositionTable.lookup(game.board, game.turn);
+    if (ttEntry && ttEntry.depth >= depth) {
+        if (ttEntry.flag === 'exact') return { score: ttEntry.value, bestMove: ttEntry.bestMove };
+        if (ttEntry.flag === 'lowerbound' && ttEntry.value > alpha) alpha = ttEntry.value;
+        if (ttEntry.flag === 'upperbound' && ttEntry.value < beta) beta = ttEntry.value;
+        if (alpha >= beta) return { score: ttEntry.value, bestMove: ttEntry.bestMove };
+    }
+
+    if (depth === 0 || game.isGameOver()) {
+        const score = quiescenceSearch(game, alpha, beta, 0);
+        return { score };
+    }
+
+    const moves = generateMoves(game);
+    let bestMove = null;
+    let bestScore = maximizingPlayer ? -Infinity : Infinity;
+    let flag = 'alpha';
+
+    for (const move of moves) {
+
+        if (stopSearch.flag) break;
+        const gameCopy = cloneGame(game);
+        try {
+            gameCopy.makeMove(move);
+            const evaluation = alphaBeta(gameCopy, depth - 1, -beta, -alpha, !maximizingPlayer, timeLimit,stopSearch).score;
+            const score = -evaluation.score;
+
+            if (maximizingPlayer) {
+                if (score > alpha) {
+                    alpha = score;
+                    bestMove = move;
+                }
+            } else {
+                if (score < beta) {
+                    beta = score;
+                    bestMove = move;
+                }
+            }
+
+            if (alpha >= beta) {
+                // flag = maximizingPlayer ? 'lowerbound' : 'upperbound';
+                break;
+            }
+        } catch {
+            continue;
+        }
+    }
+
+    transpositionTable.store(game.board, game.turn, depth, bestScore, flag, bestMove);
+    return { score: maximizingPlayer ? alpha : beta, bestMove };
+}
+function getBestMove(game, timeLimit = 3000) {
+    const startTime = Date.now();
+    const endTime = startTime + timeLimit;
+    let bestMove = null;
+    let bestMoves = []; // Array to store top moves
+    let depth = 1;
+    let bestScore = null;
+
+    const stopSearch = { flag: false }; // Early stopping flag
+
+    // Track move history patterns for penalty evaluation
+    const movePatterns = {};
+    for (let i = 0; i < game.moveHistory.length; i++) {
+        const move = game.moveHistory[i];
+        const key = `${move.from[0]},${move.from[1]}-${move.to[0]},${move.to[1]}`;
+        movePatterns[key] = (movePatterns[key] || 0) + 1;
+    }
 
 
+    try {
+        transpositionTable.clear();
+        
+        while (!stopSearch.flag && Date.now() < endTime && depth <= 4) {
+            const result = alphaBeta(
+                game,
+                depth,
+                -Infinity,
+                Infinity,
+                true,
+                endTime,
+                stopSearch
+            );
+            if (stopSearch.flag) {
+                break;
+            }
+            if (result.bestMove) {
+                bestMove = result.bestMove; // Update best move found so far
+                bestScore= result.score;
+                bestMoves = [];
+                const moves = generateMoves(game);
 
+                for (const move of moves) {
+                    const gameCopy = cloneGame(game);
+                    try {
+                        gameCopy.makeMove(move);
+                        const evaluation = -alphaBeta(
+                            gameCopy,
+                            depth - 1,
+                            -Infinity,
+                            Infinity,
+                            false,
+                            endTime,
+                            stopSearch
+                        ).score;
 
+                        // Apply penalties for repetitive moves
+                        const moveKey = `${move.from[0]},${move.from[1]}-${move.to[0]},${move.to[1]}`;
+                        const repetitionCount = movePatterns[moveKey] || 0;
+                        evaluation -= repetitionCount * 100;  // Heavy penalty for repeated moves
 
+                        // Apply penalty for using recently moved pieces
+                        const piece = game.board[move.from[0]][move.from[1]];
+                        const recentMoves = game.moveHistory.slice(-6);
+                        const pieceRecentMoves = recentMoves.filter(m =>
+                            game.board[m.from[0]][m.from[1]] === piece
+                        ).length;
+                        evaluation -= pieceRecentMoves * 50;  // Penalty for using same piece repeatedly
 
+                        // Store move with its adjusted evaluation
+                        bestMoves.push({ move, evaluation });
+                    } catch {
+                        continue;
+                    }
+                }
 
+                // Sort moves by evaluation and filter within threshold
+                bestMoves.sort((a, b) => b.evaluation - a.evaluation);
+                const threshold = bestMoves[0]?.evaluation - 200;
+                bestMoves = bestMoves.filter(m => m.evaluation >= threshold);
 
+                // Randomly select from the best moves with weighted choice
+                if (bestMoves.length > 0) {
+                    const weights = bestMoves.map((m, index) => 1 / (index + 1));
+                    const totalWeight = weights.reduce((a, b) => a + b, 0);
+                    let random = Math.random() * totalWeight;
+                    for (let i = 0; i < weights.length; i++) {
+                        random -= weights[i];
+                        if (random <= 0) {
+                            bestMove = bestMoves[i].move;
+                            break;
+                        }
+                    }
+                }
+                console.log(`Depth ${depth} completed. Found ${bestMoves.length} good moves.`);
+            }
 
+            depth++;
+        }
+    } catch (error) {
+        if (error.message !== 'Time limit exceeded') throw error;
+    }
+
+    if (!bestMove) {
+        const legalMoves = generateMoves(game);
+        if (legalMoves.length > 0) {
+            bestMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+            bestScore = evaluateBoard(game);
+        }
+    }
+
+    return {bestMove,evaluation:bestScore};
+}
 
 
 function isCheckmate(game, color) {
@@ -513,7 +673,6 @@ function createGame () {
 };
 
 
-
 /**
  * Processes a move based on the current board state and the move object.
  * @param {Array} boardState - The current board state as a 6x5 array.
@@ -648,9 +807,6 @@ function evaluatePosition(game) {
 
     return score;
 }
-
-
-
 
 function getAllPieces(game) {
     const pieces = [];
@@ -916,3 +1072,28 @@ function generateKingMoves(game, position) {
 
     return moves;
 }
+
+
+// Export all necessary functions
+module.exports = {
+    createGame,
+    makeMove,
+    runMinimax,
+    getBestMove,
+    evaluateBoard,
+    generatePieceMoves,
+    cloneGame,
+    isCheck,
+    isCheckmate,
+    isStalemate,
+    isInsufficientMaterial,
+    evaluatePosition,
+    generateMoves,
+    isValidPosition,
+    generatePawnMoves,
+    generateKnightMoves,
+    generateBishopMoves,
+    generateRookMoves,
+    generateQueenMoves,
+    generateKingMoves
+};

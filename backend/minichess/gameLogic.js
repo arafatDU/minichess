@@ -1,4 +1,4 @@
-// /Server/models/gameLogic.js
+
 
 // const { evaluateBoard } = require('../utils/evaluation');
 
@@ -187,4 +187,277 @@ function quiescenceSearch(game, alpha, beta, depth, maxDepth = 4) {
         }
     }
     return alpha;
+}
+
+
+
+
+
+
+
+
+
+function getAllPieces(game) {
+    const pieces = [];
+    const color = game.turn;
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 5; j++) {
+            const piece = game.board[i][j];
+            if (piece !== '.' &&
+                ((color === 'w' && piece === piece.toUpperCase()) ||
+                    (color === 'b' && piece === piece.toLowerCase()))) {
+                pieces.push({ row: i, col: j, piece });
+            }
+        }
+    }
+    return pieces;
+}
+/**
+ * Generates all possible moves for the specified player.
+ * @param {Object} game - The current game instance.
+ * @param {string} color - 'w' for White or 'b' for Black.
+ * @returns {Array} - Array of move objects.
+ */
+function generateMoves(game, color = game.turn) {
+    console.log('Generating moves for the current game state.');
+    const moves = [];
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 5; j++) {
+            const piece = game.board[i][j];
+            if (piece !== '.' && ((color === 'w' && piece === piece.toUpperCase()) || (color === 'b' && piece === piece.toLowerCase()))) {
+                moves.push(...generatePieceMoves(game, [i, j]));
+            }
+        }
+    }
+    console.log(`Total moves generated: ${moves.length}`);
+    return moves;
+}
+
+/**
+ * Generates all possible moves for a specific piece.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the piece.
+ * @returns {Array} - Array of move objects.
+ */
+function generatePieceMoves(game, position) {
+    const [x, y] = position;
+    const piece = game.board[x][y].toLowerCase();
+    const moves = [];
+
+    switch (piece) {
+        case 'p':
+            moves.push(...generatePawnMoves(game, position));
+            break;
+        case 'n':
+            moves.push(...generateKnightMoves(game, position));
+            break;
+        case 'b':
+            moves.push(...generateBishopMoves(game, position));
+            break;
+        case 'r':
+            moves.push(...generateRookMoves(game, position));
+            break;
+        case 'q':
+            moves.push(...generateQueenMoves(game, position));
+            break;
+        case 'k':
+            moves.push(...generateKingMoves(game, position));
+            break;
+    }
+    console.log(`Generated ${moves.length} moves for piece ${piece} at position ${position}.`);
+    return moves;
+}
+
+/**
+ * Generates all possible pawn moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the pawn.
+ * @returns {Array} - Array of move objects.
+ */
+function generatePawnMoves(game, position) {
+    const [x, y] = position;
+    const moves = [];
+    const direction = game.turn === 'w' ? -1 : 1;  // White moves up (-1), Black moves down (+1)
+    const promotionRow = game.turn === 'w' ? 0 : 5; // Row where promotion happens
+
+    // Single step forward
+    if (x + direction >= 0 && x + direction < 6) {
+        if (game.board[x + direction][y] === '.') {  // Check if the square directly in front is empty
+            if (x + direction === promotionRow) {
+                // Move to the promotion row, add promotion move
+                moves.push({ from: position, to: [x + direction, y], promotion: 'q' });
+            } else {
+                // Regular forward move
+                moves.push({ from: position, to: [x + direction, y] });
+            }
+        }
+    }
+
+    // Double step forward from the starting position
+    const canDoubleMove = (game.turn === 'w' && x === 4) || (game.turn === 'b' && x === 1);
+    if (canDoubleMove && game.board[x + direction][y] === '.' && game.board[x + 2 * direction][y] === '.') {
+        moves.push({ from: position, to: [x + 2 * direction, y] });
+    }
+
+    // Captures (diagonal moves)
+    for (const side of [-1, 1]) {
+        if (y + side >= 0 && y + side < 5 && x + direction >= 0 && x + direction < 6) {
+            const targetPiece = game.board[x + direction][y + side];
+            if (targetPiece !== '.' &&
+                ((game.turn === 'w' && targetPiece === targetPiece.toLowerCase()) ||
+                    (game.turn === 'b' && targetPiece === targetPiece.toUpperCase()))) {
+                if (x + direction === promotionRow) {
+                    // Capture and promote on the last row
+                    moves.push({ from: position, to: [x + direction, y + side], promotion: 'q' });
+                } else {
+                    // Regular capture
+                    moves.push({ from: position, to: [x + direction, y + side] });
+                }
+            }
+        }
+    }
+
+    return moves;
+}
+
+/**
+ * Generates all possible knight moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the knight.
+ * @returns {Array} - Array of move objects.
+ */
+function generateKnightMoves(game, position) {
+    const [x, y] = position;
+    const moves = [];
+    const knightMoves = [
+        [2, 1], [2, -1], [-2, 1], [-2, -1],
+        [1, 2], [1, -2], [-1, 2], [-1, -2]
+    ];
+
+    for (const [dx, dy] of knightMoves) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && nx < 6 && ny >= 0 && ny < 5) {
+            const target = game.board[nx][ny];
+            if (target === '.' || (game.turn === 'w' && target === target.toLowerCase()) || (game.turn === 'b' && target === target.toUpperCase())) {
+                moves.push({ from: position, to: [nx, ny] });
+                console.log(`Knight move to [${nx}, ${ny}] added.`);
+            }
+        }
+    }
+
+    return moves;
+}
+
+/**
+ * Generates all possible queen moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the queen.
+ * @returns {Array} - Array of move objects.
+ */
+function generateQueenMoves(game, position) {
+    console.log('Generating queen moves.');
+    const rookMoves = generateRookMoves(game, position);
+    const bishopMoves = generateBishopMoves(game, position);
+
+    return rookMoves.concat(bishopMoves);
+}
+
+/**
+ * Generates all possible rook moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the rook.
+ * @returns {Array} - Array of move objects.
+ */
+function generateRookMoves(game, position) {
+    const [x, y] = position;
+    const moves = [];
+    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]; // Down, Up, Right, Left
+
+    for (const [dx, dy] of directions) {
+        let nx = x + dx;
+        let ny = y + dy;
+        while (nx >= 0 && nx < 6 && ny >= 0 && ny < 5) { // Ensure the position is within board bounds
+            const target = game.board[nx][ny];
+            if (target === '.') { // Empty square
+                moves.push({ from: position, to: [nx, ny] });
+                console.log(`Rook move to [${nx}, ${ny}] added.`);
+            } else {
+                // If it's an opponent's piece, we can capture it
+                if ((game.turn === 'w' && target === target.toLowerCase()) || (game.turn === 'b' && target === target.toUpperCase())) {
+                    moves.push({ from: position, to: [nx, ny] });
+                    console.log(`Rook capture move to [${nx}, ${ny}] added.`);
+                }
+                break;
+            }
+            nx += dx;
+            ny += dy;
+        }
+    }
+
+    return moves;
+}
+
+/**
+ * Generates all possible bishop moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the bishop.
+ * @returns {Array} - Array of move objects.
+ */
+function generateBishopMoves(game, position) {
+    const [x, y] = position;
+    const moves = [];
+    const directions = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+    for (const [dx, dy] of directions) {
+        let nx = x + dx;
+        let ny = y + dy;
+        while (nx >= 0 && nx < 6 && ny >= 0 && ny < 5) {
+            const target = game.board[nx][ny];
+            if (target === '.') { // Empty square
+                moves.push({ from: position, to: [nx, ny] });
+                console.log(`Bishop move to [${nx}, ${ny}] added.`);
+            } else {
+                // If it's an opponent's piece, we can capture it
+                if ((game.turn === 'w' && target === target.toLowerCase()) || (game.turn === 'b' && target === target.toUpperCase())) {
+                    moves.push({ from: position, to: [nx, ny] });
+                    console.log(`Bishop capture move to [${nx}, ${ny}] added.`);
+                }
+                break; // Stop moving in this direction after encountering a piece
+            }
+            nx += dx;
+            ny += dy;
+        }
+    }
+
+    return moves;
+}
+
+/**
+ * Generates all possible king moves from a given position.
+ * @param {Object} game - The current game instance.
+ * @param {Array} position - [x, y] position of the king.
+ * @returns {Array} - Array of move objects.
+ */
+function generateKingMoves(game, position) {
+    const [x, y] = position;
+    const moves = [];
+    const kingMoves = [
+        [1, 0], [-1, 0], [0, 1], [0, -1], // Horizontal and vertical moves
+        [1, 1], [1, -1], [-1, 1], [-1, -1] // Diagonal moves
+    ];
+
+    for (const [dx, dy] of kingMoves) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && nx < 6 && ny >= 0 && ny < 5) { // Ensure within bounds
+            const target = game.board[nx][ny];
+            if (target === '.' || (game.turn === 'w' && target === target.toLowerCase()) || (game.turn === 'b' && target === target.toUpperCase())) {
+                moves.push({ from: position, to: [nx, ny] });
+                console.log(`King move to [${nx}, ${ny}] added.`);
+            }
+        }
+    }
+
+    return moves;
 }

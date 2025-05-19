@@ -12,3 +12,6 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 app.include_router(router)
+
+
+# uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

@@ -79,7 +79,7 @@ Here are screenshots showcasing the UI for different stages and game modes:
   - Depth 2 (Balanced challenge)
   - Depth 3 (Experienced players)
 
-![Gameplay]
+
 ![Screenshot from 2025-05-19 11-06-20](https://github.com/user-attachments/assets/05d40842-2a24-4f26-90ac-0d0e22833a14)
 
 - The gameplay screen features a 6x5 chessboard styled for MiniChess.

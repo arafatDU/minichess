@@ -1,66 +1,100 @@
-# Minichess AI Project
+# ♟️ MiniChessAI: Evaluation Criteria & Implementation Details ♟️
 
-## Project Description
+## Introduction
 
-Minichess is a simplified, shorter version of Chess played on a 6 x 5 board. This project involves developing an AI program that can effectively play Minichess against a human or another AI opponent. The project aims to showcase the use of search algorithms, game tree exploration, and strategic decision-making using advanced algorithms like Minimax with alpha-beta pruning. Additionally,  the project includes the development of a user interface for  interaction.
+MiniChessAI is an artificial intelligence agent designed to play MiniChess (6x5 board — Speed Chess). The AI’s strength and play style are determined by its evaluation criteria and implementation choices. This report details the evaluation metrics used to assess board positions, the algorithms powering the AI, and other relevant implementation details.
 
-## Project Requirements
+## Evaluation Criteria
 
-### Core Features
+The AI evaluates each board state using a weighted sum of several chess-specific features. The main criteria are:
 
-- **Game Tree Search**: Implementation of a suitable search  algorithm for exploring  the game  tree.
-- **Minimax Algorithm**: Running the minimax algorithm on the game tree to determine the optimal move.
-- **Alpha-Beta Pruning**: Implementation of alpha-beta pruning to enhance the efficiency of the search process by reducing the number of nodes evaluated.
-- **Evaluation Function**: Design and implementation  of an effective evaluation function to assess the quality of intermediate game states.
-- **Early Stopping Mechanism**: Inclusion of an early stopping mechanism to enable the AI to abort the search process and return the minimax value based on the evaluation function.
+### 1. Material Balance
+- **Definition:** The total value of all pieces for both sides.
+- **Implementation:** Each piece type is assigned a standard value (Pawn: 1, Knight/Bishop: 3, Rook: 5, Queen: 9, King: very high value to prevent loss).
+- **Purpose:** Encourages the AI to capture opponent pieces and avoid losing its own.
 
-### Additional Features
+### 2. Piece Activity & Mobility
+- **Definition:** The number of legal moves available to each side.
+- **Implementation:** The AI counts all possible moves for its pieces and subtracts the opponent’s mobility.
+- **Purpose:** Favors positions where the AI has more options and flexibility.
 
-- **User Interface**: A  functional user interface for gameplay. An aesthetic or graphical user interface is encouraged and will earn extra credits.
-- **Version Control**: The project must be maintained using Git or a similar version control system.
+### 3. Pawn Structure
+- **Definition:** The arrangement and support of pawns.
+- **Implementation:** Penalties for doubled, isolated, or backward pawns; bonuses for connected and advanced pawns.
+- **Purpose:** Promotes strong, cohesive pawn formations and discourages weaknesses.
 
-## Objectives
+### 4. King Safety
+- **Definition:** The vulnerability of the king to attack.
+- **Implementation:** Penalties if the king is exposed (few surrounding pawns/pieces) or under direct threat.
+- **Purpose:** Encourages castling and keeping the king protected.
 
-- Develop a computer program capable of playing Minichess effectively against a human or another AI.
-- Implement the minimax algorithm enhanced  with alpha-beta pruning for optimal move selection.
-- Design a robust evaluation function to estimate the strength of board positions.
-- Create a user-friendly interface for gameplay interaction.
-- Maintain comprehensive project documentation and version control through a Git repository.
+### 5. Center Control
+- **Definition:** Occupation and influence over central squares.
+- **Implementation:** Bonuses for pieces controlling or occupying the central 2x2 or 3x3 area.
+- **Purpose:** Central control increases piece effectiveness and flexibility.
 
-## Key Components
+### 6. Threats and Tactical Motifs
+- **Definition:** Immediate threats such as checks, forks, pins, and discovered attacks.
+- **Implementation:** Small bonuses for giving check, attacking high-value pieces, or creating tactical threats.
+- **Purpose:** Encourages the AI to create and exploit tactical opportunities.
 
-### 1. Search Algorithm
+### 7. Game End Conditions
+- **Checkmate:** Returns a large positive/negative value depending on the winner.
+- **Stalemate:** Returns zero, indicating a draw.
+- **Draw by Insufficient Material or Repetition:** Returns zero.
 
-- Implementation of a suitable search algorithm to navigate the game tree efficiently.
+## Implementation Details
 
-### 2. Minimax Algorithm
+### Search Algorithm
+- **Minimax with Alpha-Beta Pruning:** The AI simulates possible move sequences for both sides up to a fixed depth, using alpha-beta pruning to skip unpromising branches and improve efficiency.
+- **Iterative Deepening:** The AI increases search depth incrementally, allowing it to return the best move found within a time limit.
+- **Move Ordering:** Captures, checks, and threats are searched first to maximize pruning effectiveness.
 
-- Running the minimax algorithm to select the best move, ensuring the AI plays strategically.
+### Evaluation Function
+- The evaluation function is called at each leaf node of the search tree and combines all criteria above into a single score.
+- Weights for each criterion are tuned through testing and self-play.
 
-### 3. Alpha-Beta Pruning
+### Performance Optimizations
+- **Transposition Table:** Caches previously evaluated positions to avoid redundant calculations.
+- **Move Generation:** Efficient move generation routines minimize computation time.
 
-- Integrating alpha-beta pruning to reduce the computational  cost and time by minimizing the number of nodes evaluated.
+### User Interface & Integration
 
-### 4. Evaluation Function
+Here are screenshots showcasing the UI for different stages and game modes:
 
-- Developing a strong evaluation function to evaluate board positions and guide the minimax decision-making process.
+![Main Menu](./mnt/data/Screenshot from 2025-05-19 11-06-01.png)
 
-### 5. Early Stopping Mechanism
+- The main menu offers three modes:
+  - **Human vs AI** (with a pawn icon)
+  - **Human vs Human** (with user icons)
+  - **AI vs AI** (with a robot icon)
 
-- Implementing a  mechanism to halt the search process early when needed, returning minimax values based on the  current board evaluation.
+![Select Depth](./mnt/data/Screenshot from 2025-05-19 11-06-10.png)
 
-## User Interface
+- In Human vs AI mode, players select AI difficulty depth:
+  - Depth 1 (Beginner friendly)
+  - Depth 2 (Balanced challenge)
+  - Depth 3 (Experienced players)
 
-- A basic user interface is required for gameplay interaction.
-- An advanced graphical interface is  encouraged for extra credit and a better user experience.
+![Gameplay](./mnt/data/Screenshot from 2025-05-19 11-06-20.png)
 
-## Version Control
+- The gameplay screen features a 6x5 chessboard styled for MiniChess.
+- A status bar indicates whose turn it is.
+- Option to go back to menu is available.
 
-- The project must be maintained in a Git repository to track changes, facilitate collaboration, and ensure version control.
+### Technology Stack
+- **Backend:** Python (FastAPI) handles game logic, move validation, and AI computation.
+- **Frontend:** Next.js (React) provides an interactive chessboard and user controls.
+- **Game Modes:** Supports Human vs AI, AI vs AI, and Human vs Human.
+
+### Testing & Validation
+- The AI is tested against known MiniChess puzzles and through self-play to ensure it makes reasonable decisions and avoids blunders.
+- Unit tests cover move generation, evaluation, and endgame detection.
 
 ## Conclusion
 
-This project combines strategic AI development with practical implementation of search algorithms and user interface design, creating a comprehensive AI program capable of playing Minichess effectively.
+MiniChessAI combines classic chess AI techniques with optimizations for the 6x5 board. Its evaluation function balances material, mobility, king safety, pawn structure, and tactical awareness, resulting in a challenging and adaptable opponent. The implementation is modular, efficient, and supports multiple play modes for both casual and competitive use.
 
+---
 
-
+♟️ Ready to challenge your mind? Play MiniChess and experience strategic depth in a fast-paced, compact game! ♟️

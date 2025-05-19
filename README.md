@@ -70,7 +70,7 @@ Here are screenshots showcasing the UI for different stages and game modes:
   - **Human vs Human** (with user icons)
   - **AI vs AI** (with a robot icon)
 
-![Select Depth]
+
 ![Screenshot from 2025-05-19 11-06-10](https://github.com/user-attachments/assets/57621a37-f435-4323-be02-2b6bd4d92cc0)
 
 

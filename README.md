@@ -2,7 +2,7 @@
 
 ## Introduction
 
-MiniChessAI is an artificial intelligence agent designed to play MiniChess (6x5 board — Speed Chess). The AI’s strength and play style are determined by its evaluation criteria and implementation choices. This report details the evaluation metrics used to assess board positions, the algorithms powering the AI, and other relevant implementation details.
+MiniChessAI is an artificial intelligence agent designed to play MiniChess (6x5 board — Speed Chess). The AI's strength and play style are determined by its evaluation criteria and implementation choices. This report details the evaluation metrics used to assess board positions, the algorithms powering the AI, and other relevant implementation details.
 
 ## Evaluation Criteria
 
@@ -15,7 +15,7 @@ The AI evaluates each board state using a weighted sum of several chess-specific
 
 ### 2. Piece Activity & Mobility
 - **Definition:** The number of legal moves available to each side.
-- **Implementation:** The AI counts all possible moves for its pieces and subtracts the opponent’s mobility.
+- **Implementation:** The AI counts all possible moves for its pieces and subtracts the opponent's mobility.
 - **Purpose:** Favors positions where the AI has more options and flexibility.
 
 ### 3. Pawn Structure
@@ -42,6 +42,42 @@ The AI evaluates each board state using a weighted sum of several chess-specific
 - **Checkmate:** Returns a large positive/negative value depending on the winner.
 - **Stalemate:** Returns zero, indicating a draw.
 - **Draw by Insufficient Material or Repetition:** Returns zero.
+
+## Specific Scoring Values
+
+The AI evaluates positions by assigning numerical scores to various elements:
+
+| Feature | Point Value | Notes |
+|---------|-------------|-------|
+| **Material Values** | | |
+| Pawn | 1.0 | Basic unit of value |
+| Knight | 3.0 | Slightly stronger in restricted 6x5 board |
+| Bishop | 3.0 | Equal to knight in this implementation |
+| Rook | 5.0 | Powerful especially in endgames |
+| King | 1000.0 | Effectively infinite (must be protected) |
+| **Position Bonuses** | | |
+| Center square control (inner 2x2) | +0.15 | Bonus per piece in center |
+| Extended center control | +0.05 | Bonus for pieces in the 3x3 area |
+| Knight proximity to center | +0.1 × (3 - distance) | Knights are better near center |
+| **Pawn Structure** | | |
+| Doubled pawns | -0.6 | Penalty per doubled pawn |
+| Isolated pawns | -0.4 | Pawns with no friendly pawns in adjacent columns |
+| Advanced pawns | +0.2 × row | Bonus increases as pawns advance (multiplied by row) |
+| **King Safety** | | |
+| Pawn near king | +0.3 | Bonus for each pawn adjacent to king |
+| King without pawn protection | -0.4 | Penalty for exposed king file |
+| **Mobility** | | |
+| Legal moves | +0.15 per move | Bonus for each possible move |
+| **Tactical Elements** | | |
+| Check | +0.7 | Bonus for putting opponent in check |
+| Checkmate | ±∞ | Game ending condition |
+| Stalemate | 0 | Draw value |
+
+### Scoring Formula
+
+The final evaluation score is calculated as
+
+Positive scores favor Black, while negative scores favor White (due to implementation choice).
 
 ## Implementation Details
 
@@ -101,4 +137,4 @@ MiniChessAI combines classic chess AI techniques with optimizations for the 6x5 
 
 ---
 
-♟️ Ready to challenge your mind? Play MiniChess and experience strategic depth in a fast-paced, compact game! ♟️
+

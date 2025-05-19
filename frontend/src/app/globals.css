@@ -1,0 +1,306 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global page background with a PNG and gradient overlay */
+body {
+  background: linear-gradient(rgba(77, 77, 78, 0.1), rgba(185, 187, 189, 0.1)),
+              url('../../public/chess_kingdom.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Cinzel', serif;
+  color: #1f2937;
+  overflow-x: hidden;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Chessboard with increased size and modern styling */
+.chessboard {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  width: min(100vw, 600px);
+  height: min(120vw, 720px);
+  aspect-ratio: 5/6;
+  background-color: rgba(166, 124, 82, 0.9);
+  border: 8px solid #5D4037;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 0, 0, 0.2) inset;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(5px);
+}
+
+.chessboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="200" opacity="0.05"><path d="M0 0 C 50 50, 50 150, 100 200" stroke="white" fill="none" stroke-width="2"/></svg>');
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Square styling with adjusted sizes for larger board */
+.square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: min(12vw, 3.5rem);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.square:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.light-square {
+  background-color: rgba(215, 179, 119, 0.9);
+}
+
+.dark-square {
+  background-color: rgba(139, 90, 43, 0.9);
+}
+
+.selected {
+  background-color: rgba(255, 215, 0, 0.8) !important;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+}
+
+.valid-move {
+  position: relative;
+}
+
+.valid-move::after {
+  content: '';
+  position: absolute;
+  width: 35%;
+  height: 35%;
+  background-color: rgba(255, 215, 0, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+  animation: pulse-gold 1.5s infinite;
+}
+
+.last-move {
+  background-color: rgba(255, 215, 0, 0.3) !important;
+}
+
+.check {
+  border: 4px solid rgba(220, 38, 38, 0.8);
+  animation: pulse-red 1.5s infinite;
+}
+
+/* Pulse animation for valid moves */
+@keyframes pulse-gold {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* Pulse animation for check state */
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+/* Disable interactions during AI thinking or animation */
+.disabled {
+  pointer-events: none;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Animating piece with adjusted sizes */
+.animating-piece {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: clamp(3rem, 7vw, 4rem);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+/* Main menu with clean design */
+.menu-container {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Fade-in animation for menu */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-button {
+  background: linear-gradient(90deg, #8B4513, #A0522D);
+  color: #F5DEB3;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.menu-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(90deg, #A0522D, #8B4513);
+}
+
+/* Game container with adjusted padding */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem;
+  background: rgba(44, 62, 80, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  max-width: 900px;
+  width: 95%;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive typography */
+h1 {
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  font-weight: 700;
+  color: #F5DEB3;
+  font-family: 'Cinzel', serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+p {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  font-family: 'Raleway', sans-serif;
+}
+
+/* Loading animation */
+.loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .chessboard {
+    width: min(90vh, 600px);
+    height: min(108vh, 720px);
+  }
+  
+  .square {
+    font-size: min(9vh, 3.5rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .chessboard {
+    max-width: 100vw;
+  }
+  .square {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+  }
+  .game-container, .menu-container {
+    padding: 1.5rem;
+  }
+}
+/* Add these to your existing globals.css */
+
+/* Chess Game Specific Styles */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem;
+  background: rgba(44, 62, 80, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  max-width: 900px;
+  width: 95%;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .game-container {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-container {
+    padding: 1.5rem;
+  }
+}
+
+.bg-wood-pattern {
+  background-image: url('/wood1.jpg'); /* your wood texture */
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.text-ivory {
+  color: #f8f4e3;
+}
+
+.bg-brown-800 {
+  background-color: #4b2e05;
+}
+
+.border-brown-800 {
+  border-color: #4b2e05;
+}
+

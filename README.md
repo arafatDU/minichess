@@ -1,4 +1,4 @@
-# ♟️ MiniChessAI: Evaluation Criteria & Implementation Details ♟️
+# ♟️ MiniChessAI: Evaluation Criteria & Implementation Details 
 
 ## Introduction
 

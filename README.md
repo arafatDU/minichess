@@ -62,7 +62,7 @@ The AI evaluates each board state using a weighted sum of several chess-specific
 
 Here are screenshots showcasing the UI for different stages and game modes:
 
-![Main Menu]
+
 ![Screenshot from 2025-05-19 11-06-01](https://github.com/user-attachments/assets/6a317ccf-a54d-4174-98e7-30dc4e424528)
 
 - The main menu offers three modes:

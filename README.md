@@ -62,21 +62,25 @@ The AI evaluates each board state using a weighted sum of several chess-specific
 
 Here are screenshots showcasing the UI for different stages and game modes:
 
-![Main Menu](./mnt/data/Screenshot from 2025-05-19 11-06-01.png)
+![Main Menu]
+![Screenshot from 2025-05-19 11-06-01](https://github.com/user-attachments/assets/6a317ccf-a54d-4174-98e7-30dc4e424528)
 
 - The main menu offers three modes:
   - **Human vs AI** (with a pawn icon)
   - **Human vs Human** (with user icons)
   - **AI vs AI** (with a robot icon)
 
-![Select Depth](./mnt/data/Screenshot from 2025-05-19 11-06-10.png)
+![Select Depth]
+![Screenshot from 2025-05-19 11-06-10](https://github.com/user-attachments/assets/57621a37-f435-4323-be02-2b6bd4d92cc0)
+
 
 - In Human vs AI mode, players select AI difficulty depth:
   - Depth 1 (Beginner friendly)
   - Depth 2 (Balanced challenge)
   - Depth 3 (Experienced players)
 
-![Gameplay](./mnt/data/Screenshot from 2025-05-19 11-06-20.png)
+![Gameplay]
+![Screenshot from 2025-05-19 11-06-20](https://github.com/user-attachments/assets/05d40842-2a24-4f26-90ac-0d0e22833a14)
 
 - The gameplay screen features a 6x5 chessboard styled for MiniChess.
 - A status bar indicates whose turn it is.
